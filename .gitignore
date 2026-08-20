@@ -1,0 +1,40 @@
+# Android / Gradle
+.gradle/
+**/build/
+local.properties
+.kotlin/
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+out/
+captures/
+
+# Generated app artifacts
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+
+# Native / external build artifacts
+.externalNativeBuild/
+.cxx/
+
+# Logs and local debug artifacts
+*.log
+instacleanlink_debug.log
+
+# Signing keys and local secret config
+*.jks
+*.keystore
+*.p12
+keystore.properties
+signing.properties
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+desktop.ini
+*.tmp
+*.swp
