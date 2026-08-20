@@ -1,7 +1,9 @@
 package com.example.instacleanlink
 
 import android.content.Intent
+import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.*
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
@@ -10,6 +12,13 @@ import org.robolectric.Shadows.shadowOf
 
 @RunWith(RobolectricTestRunner::class)
 class MainActivityTest {
+
+    @Before
+    fun setUp() {
+        val context = ApplicationProvider.getApplicationContext<android.app.Application>()
+        PrefsManager.clearAppLanguage(context)
+        AppLanguageManager.setAppLanguage(context, AppLanguage.ENGLISH)
+    }
 
     private fun assertTrackingParamsRemoved(text: String) {
         assertFalse("igsh should be removed", text.contains("igsh="))
@@ -32,7 +41,7 @@ class MainActivityTest {
     fun `share intent with instagram link cleans known trackers and finishes`() {
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
-            putExtra(Intent.EXTRA_TEXT, "Olha esse post https://www.instagram.com/p/ABC?igsh=track123&igsi=track456")
+            putExtra(Intent.EXTRA_TEXT, "Check this post https://www.instagram.com/p/ABC?igsh=track123&igsi=track456")
         }
         val activity = Robolectric.buildActivity(MainActivity::class.java, intent)
             .create().get()

@@ -51,7 +51,7 @@ object UrlCleaner {
         val remainingTrackingParams = findTrackingParams(cleaned)
         if (remainingTrackingParams.isNotEmpty()) {
             throw IllegalStateException(
-                "Parâmetros ${remainingTrackingParams.joinToString(", ")} não foram removidos"
+                "Parameters ${remainingTrackingParams.joinToString(", ")} were not removed"
             )
         }
 

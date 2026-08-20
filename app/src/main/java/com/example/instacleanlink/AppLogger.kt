@@ -11,10 +11,10 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * Sistema de logging persistente que grava logs detalhados em arquivo.
- * - Arquivo: instacleanlink_debug.log em Downloads/LOGS INSTACLEAN LINK/
- * - Fallback: pasta interna do app se não tiver permissão
- * - Limite de tamanho: 1GB (limpa metade dos logs mais antigos quando excede)
+ * Persistent logging system that writes detailed logs to a file.
+ * - File: instacleanlink_debug.log in Downloads/LOGS INSTACLEAN LINK/
+ * - Fallback: the app's internal storage if permission is unavailable
+ * - Max size: 1 GB (removes the oldest half of the log when exceeded)
  * - Thread-safe
  */
 object AppLogger {
@@ -22,7 +22,7 @@ object AppLogger {
     private const val LOG_FILE_NAME = "instacleanlink_debug.log"
     private const val LOG_FOLDER_NAME = "LOGS INSTACLEAN LINK"
     private const val MAX_SIZE_BYTES = 1L * 1024 * 1024 * 1024 // 1 GB
-    private const val TRIM_TARGET_RATIO = 0.5 // Manter 50% quando limpar
+    private const val TRIM_TARGET_RATIO = 0.5 // Keep 50% of the newest entries after trimming.
 
     @Volatile
     private var logFile: File? = null
@@ -30,18 +30,18 @@ object AppLogger {
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US)
 
     /**
-     * Inicializa o logger. Tenta salvar em Downloads/LOGS INSTACLEAN LINK/.
-     * Se não tiver permissão, usa a pasta interna do app como fallback.
+     * Initializes the logger. Tries to save to Downloads/LOGS INSTACLEAN LINK/.
+     * Falls back to the app's internal storage when permission is unavailable.
      */
     fun init(context: Context) {
         if (logFile == null) {
             synchronized(this) {
                 if (logFile == null) {
                     logFile = resolveLogFile(context)
-                    // Log inicial informando onde os logs estão sendo salvos
+                    // Initial log entry showing where logs will be saved.
                     val file = logFile
                     if (file != null) {
-                        android.util.Log.i("AppLogger", "Logs serão salvos em: ${file.absolutePath}")
+                        android.util.Log.i("AppLogger", "Logs will be saved to: ${file.absolutePath}")
                     }
                 }
             }
@@ -49,7 +49,7 @@ object AppLogger {
     }
 
     private fun resolveLogFile(context: Context): File {
-        // Tenta usar Downloads/LOGS INSTACLEAN LINK/
+        // Try using Downloads/LOGS INSTACLEAN LINK/.
         if (hasStoragePermission()) {
             try {
                 val downloadsDir = Environment.getExternalStoragePublicDirectory(
@@ -63,35 +63,35 @@ object AppLogger {
                     return File(logDir, LOG_FILE_NAME)
                 }
             } catch (e: Exception) {
-                android.util.Log.w("AppLogger", "Não foi possível criar pasta em Downloads: ${e.message}")
+                android.util.Log.w("AppLogger", "Could not create the Downloads log directory: ${e.message}")
             }
         }
 
-        // Fallback: pasta interna do app
-        android.util.Log.w("AppLogger", "Usando pasta interna como fallback para logs")
+        // Fallback: use the app's internal storage.
+        android.util.Log.w("AppLogger", "Using internal app storage as the log fallback")
         return File(context.filesDir, LOG_FILE_NAME)
     }
 
     /**
-     * Verifica se tem permissão de acesso ao armazenamento externo.
+     * Checks whether the app has permission to access external storage.
      */
     private fun hasStoragePermission(): Boolean {
         return try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 Environment.isExternalStorageManager()
             } else {
-                // Android 10 e abaixo — WRITE_EXTERNAL_STORAGE é suficiente
+                // Android 10 and below — WRITE_EXTERNAL_STORAGE is enough.
                 true
             }
         } catch (e: Exception) {
-            // Pode falhar em ambientes de teste (Robolectric)
+            // This can fail in test environments such as Robolectric.
             false
         }
     }
 
     /**
-     * Reinicializa o logger (útil após o usuário conceder permissão de armazenamento).
-     * Força a reavaliação do caminho do arquivo de log.
+     * Reinitializes the logger after the user grants storage permission.
+     * Forces the log file path to be re-evaluated.
      */
     fun reinit(context: Context) {
         synchronized(this) {
@@ -112,7 +112,7 @@ object AppLogger {
     }
 
     /**
-     * Log detalhado com informações do dispositivo e contexto.
+     * Detailed log event with device and context information.
      */
     fun logEvent(tag: String, event: String, details: Map<String, String?> = emptyMap()) {
         val sb = StringBuilder()
@@ -124,7 +124,7 @@ object AppLogger {
     }
 
     /**
-     * Log de informações do dispositivo (útil no início de cada sessão).
+     * Logs device information, useful at the start of each session.
      */
     fun logDeviceInfo(tag: String) {
         logEvent(tag, "DEVICE_INFO", mapOf(
@@ -143,7 +143,7 @@ object AppLogger {
         val threadName = Thread.currentThread().name
         val entry = "[$timestamp] [$level] [$tag] [thread:$threadName] $message\n"
 
-        // Também loga no logcat
+        // Also send entries to logcat.
         when (level) {
             "DEBUG" -> android.util.Log.d(tag, message)
             "INFO" -> android.util.Log.i(tag, message)
@@ -154,20 +154,20 @@ object AppLogger {
 
         synchronized(this) {
             try {
-                // Verifica tamanho antes de escrever
+                // Check size before writing.
                 if (file.exists() && file.length() > MAX_SIZE_BYTES) {
                     trimLogFile(file)
                 }
                 file.appendText(entry)
             } catch (e: Exception) {
-                android.util.Log.e("AppLogger", "Falha ao escrever no log: ${e.message}")
+                android.util.Log.e("AppLogger", "Failed to write log entry: ${e.message}")
             }
         }
     }
 
     /**
-     * Remove a primeira metade do arquivo de log para reduzir o tamanho.
-     * Mantém os logs mais recentes.
+     * Removes the oldest half of the log file to reduce its size.
+     * Keeps the most recent entries.
      */
     private fun trimLogFile(file: File) {
         try {
@@ -182,7 +182,7 @@ object AppLogger {
                 file.appendText(line + "\n")
             }
         } catch (e: Exception) {
-            // Se falhar ao limpar, tenta apagar e recomeçar
+            // If trimming fails, wipe the file and start fresh.
             try {
                 file.writeText("[LOG RESET at ${dateFormat.format(Date())}] Previous log was too large and could not be trimmed.\n")
             } catch (_: Exception) { }
@@ -190,17 +190,17 @@ object AppLogger {
     }
 
     /**
-     * Retorna o caminho do arquivo de log para o usuário poder acessar.
+     * Returns the path of the active log file.
      */
     fun getLogFilePath(): String? = logFile?.absolutePath
 
     /**
-     * Retorna o tamanho atual do arquivo de log em bytes.
+     * Returns the current log file size in bytes.
      */
     fun getLogFileSize(): Long = logFile?.let { if (it.exists()) it.length() else 0L } ?: 0L
 
     /**
-     * Limpa todo o arquivo de log.
+     * Clears the entire log file.
      */
     fun clearLog() {
         val file = logFile ?: return

@@ -18,6 +18,7 @@ class PrefsManagerTest {
         context = ApplicationProvider.getApplicationContext()
         // Clear all prefs before each test
         PrefsManager.clearPreferredApp(context)
+        PrefsManager.clearAppLanguage(context)
     }
 
     // --- Preferred App ---
@@ -56,6 +57,22 @@ class PrefsManagerTest {
 
         assertNull(PrefsManager.getPreferredApp(context))
         assertNull(PrefsManager.getPreferredAppLabel(context))
+    }
+
+    @Test
+    fun `setAppLanguageCode saves the selected language`() {
+        PrefsManager.setAppLanguageCode(context, "pt")
+
+        assertEquals("pt", PrefsManager.getAppLanguageCode(context))
+    }
+
+    @Test
+    fun `clearAppLanguage removes the saved language`() {
+        PrefsManager.setAppLanguageCode(context, "en")
+
+        PrefsManager.clearAppLanguage(context)
+
+        assertNull(PrefsManager.getAppLanguageCode(context))
     }
 
     // --- Retry tracking ---

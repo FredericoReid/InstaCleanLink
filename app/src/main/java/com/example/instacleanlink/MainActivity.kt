@@ -8,6 +8,8 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.Settings
+import androidx.annotation.PluralsRes
+import androidx.annotation.StringRes
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -49,23 +51,26 @@ class MainActivity : ComponentActivity() {
     private val manageStorageLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) {
-        // Quando o usuário volta da tela de permissão, reinicializa o logger
+        // Reinitialize the logger after the user returns from the storage permission screen.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && Environment.isExternalStorageManager()) {
             AppLogger.reinit(this)
-            AppLogger.i("MainActivity", "Permissão MANAGE_EXTERNAL_STORAGE concedida — logs salvos em: ${AppLogger.getLogFilePath()}")
+            AppLogger.i(
+                "MainActivity",
+                "MANAGE_EXTERNAL_STORAGE granted — logs saved at: ${AppLogger.getLogFilePath()}"
+            )
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Inicializa o logger e pede permissão de armazenamento
+        // Initialize logging and request storage permission when needed.
         try {
             AppLogger.init(this)
             requestStoragePermissionIfNeeded()
         } catch (e: Exception) {
-            // Silencia erros em ambientes de teste
-            android.util.Log.w("MainActivity", "Erro ao inicializar logger/permissões: ${e.message}")
+            // Ignore failures in test environments.
+            android.util.Log.w("MainActivity", "Failed to initialize logger/permissions: ${e.message}")
         }
 
         if (intent?.action == Intent.ACTION_SEND && "text/plain" == intent.type) {
@@ -90,14 +95,14 @@ class MainActivity : ComponentActivity() {
                     }
                     manageStorageLauncher.launch(intent)
                 } catch (e: Exception) {
-                    // Fallback: abre a tela genérica de permissão
+                    // Fallback: open the generic permission settings screen.
                     val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
                     manageStorageLauncher.launch(intent)
                 }
             }
         }
-        // Android 10 e abaixo: WRITE_EXTERNAL_STORAGE já está no manifest
-        // e é concedido automaticamente em API < 29
+        // Android 10 and below: WRITE_EXTERNAL_STORAGE is already declared in the manifest
+        // and is granted automatically on API levels below 29.
     }
 
     private fun handleSharedText(intent: Intent) {
@@ -113,7 +118,10 @@ class MainActivity : ComponentActivity() {
             try {
                 startActivity(shareIntent)
             } catch (e: Exception) {
-                val chooserIntent = Intent.createChooser(shareIntent, "Compartilhar com")
+                val chooserIntent = Intent.createChooser(
+                    shareIntent,
+                    AppLanguageManager.getString(this, R.string.share_with)
+                )
                 startActivity(chooserIntent)
             }
         }
@@ -143,6 +151,15 @@ fun MainScreen(modifier: Modifier = Modifier) {
     }
     var installedApps by remember { mutableStateOf<List<ResolveInfo>>(emptyList()) }
     var showAppPicker by remember { mutableStateOf(false) }
+    var appLanguage by remember { mutableStateOf(AppLanguageManager.getAppLanguage(context)) }
+
+    fun text(@StringRes resId: Int, vararg formatArgs: Any): String {
+        return AppLanguageManager.getString(context, appLanguage, resId, *formatArgs)
+    }
+
+    fun quantityText(@PluralsRes resId: Int, quantity: Int, vararg formatArgs: Any): String {
+        return AppLanguageManager.getQuantityString(context, appLanguage, resId, quantity, *formatArgs)
+    }
 
     LaunchedEffect(Unit) {
         installedApps = findInstagramApps(context)
@@ -155,27 +172,75 @@ fun MainScreen(modifier: Modifier = Modifier) {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        // --- Seção: Como funciona ---
         Text(
-            text = "Como funciona",
+            text = text(R.string.how_it_works_title),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold
         )
         Text(
-            text = "Este app limpa links do Instagram automaticamente, " +
-                    "removendo rastreadores de privacidade (igsh, igshid e igsi).\n\n" +
-                    "• Ao clicar em links: limpa antes de abrir\n" +
-                    "• Ao compartilhar: limpa antes de enviar\n\n" +
-                    "Se não houver rastreadores conhecidos, o app avisa antes de abrir o link.\n\n" +
-                    "Se houver erro na limpeza, o link é bloqueado na primeira tentativa " +
-                    "para proteger sua privacidade. Toque novamente para abrir mesmo assim."
+            text = text(R.string.how_it_works_description)
         )
 
         HorizontalDivider()
 
-        // --- Seção: App preferido ---
         Text(
-            text = "App Instagram preferido",
+            text = text(R.string.language_title),
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold
+        )
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                val currentLanguageLabel = text(
+                    if (appLanguage == AppLanguage.ENGLISH) {
+                        R.string.language_english
+                    } else {
+                        R.string.language_portuguese
+                    }
+                )
+
+                Text(
+                    text = text(R.string.current_language, currentLanguageLabel),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(
+                        onClick = {
+                            AppLanguageManager.setAppLanguage(context, AppLanguage.ENGLISH)
+                            appLanguage = AppLanguage.ENGLISH
+                        },
+                        enabled = appLanguage != AppLanguage.ENGLISH
+                    ) {
+                        Text(text(R.string.language_english))
+                    }
+                    OutlinedButton(
+                        onClick = {
+                            AppLanguageManager.setAppLanguage(context, AppLanguage.PORTUGUESE)
+                            appLanguage = AppLanguage.PORTUGUESE
+                        },
+                        enabled = appLanguage != AppLanguage.PORTUGUESE
+                    ) {
+                        Text(text(R.string.language_portuguese))
+                    }
+                }
+            }
+        }
+
+        HorizontalDivider()
+
+        Text(
+            text = text(R.string.preferred_instagram_app_title),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold
         )
@@ -195,8 +260,11 @@ fun MainScreen(modifier: Modifier = Modifier) {
             ) {
                 Column {
                     Text(
-                        text = if (preferredAppLabel != null) "Abrindo sempre com:"
-                        else "Nenhum app definido",
+                        text = if (preferredAppLabel != null) {
+                            text(R.string.opening_always_with)
+                        } else {
+                            text(R.string.no_app_set)
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -208,7 +276,7 @@ fun MainScreen(modifier: Modifier = Modifier) {
                         )
                     } else {
                         Text(
-                            text = "Será perguntado a cada vez",
+                            text = text(R.string.ask_every_time),
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
@@ -216,33 +284,35 @@ fun MainScreen(modifier: Modifier = Modifier) {
             }
         }
 
-        // Botões de ação
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedButton(onClick = { showAppPicker = true }) {
-                Text("Alterar")
+                Text(text(R.string.change))
             }
             if (preferredAppLabel != null) {
                 OutlinedButton(onClick = {
                     PrefsManager.clearPreferredApp(context)
                     preferredAppLabel = null
                 }) {
-                    Text("Resetar")
+                    Text(text(R.string.reset))
                 }
             }
         }
 
-        // Info sobre apps encontrados
         Text(
-            text = "${installedApps.size} app(s) Instagram encontrado(s)",
+            text = quantityText(
+                R.plurals.instagram_apps_found,
+                installedApps.size,
+                installedApps.size
+            ),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 
-    // Dialog para escolher app
     if (showAppPicker) {
         AppPickerDialog(
             apps = installedApps,
+            appLanguage = appLanguage,
             onAppSelected = { packageName, label ->
                 PrefsManager.setPreferredApp(context, packageName, label)
                 preferredAppLabel = label
@@ -256,13 +326,19 @@ fun MainScreen(modifier: Modifier = Modifier) {
 @Composable
 fun AppPickerDialog(
     apps: List<ResolveInfo>,
+    appLanguage: AppLanguage,
     onAppSelected: (packageName: String, label: String) -> Unit,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
+
+    fun text(@StringRes resId: Int, vararg formatArgs: Any): String {
+        return AppLanguageManager.getString(context, appLanguage, resId, *formatArgs)
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Escolha o app Instagram") },
+        title = { Text(text(R.string.choose_instagram_app)) },
         text = {
             LazyColumn {
                 items(apps) { app ->
@@ -292,7 +368,7 @@ fun AppPickerDialog(
         },
         confirmButton = {},
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancelar") }
+            TextButton(onClick = onDismiss) { Text(text(R.string.cancel)) }
         }
     )
 }

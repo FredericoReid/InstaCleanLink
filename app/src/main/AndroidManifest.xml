@@ -2,16 +2,16 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Permissões de armazenamento para salvar logs em Downloads -->
+    <!-- Storage permissions for saving logs in Downloads -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
-    <!-- Android 11+ (API 30+): acesso a todos os arquivos para criar pasta em Downloads -->
+    <!-- Android 11+ (API 30+): all-files access to create the Downloads log folder -->
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
         tools:ignore="ScopedStorage" />
 
-    <!-- Necessário para descobrir apps Instagram no Android 11+ -->
+    <!-- Needed to discover Instagram apps on Android 11+ -->
     <queries>
         <intent>
             <action android:name="android.intent.action.VIEW" />

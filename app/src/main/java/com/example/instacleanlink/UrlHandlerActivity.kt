@@ -9,6 +9,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
+import androidx.annotation.StringRes
 import androidx.activity.ComponentActivity
 
 class UrlHandlerActivity : ComponentActivity() {
@@ -19,6 +20,10 @@ class UrlHandlerActivity : ComponentActivity() {
 
     /** Visible for testing — allows injecting a custom cleaner to simulate failures */
     internal var urlCleanerFn: (Uri) -> Uri = { uri -> UrlCleaner.cleanUri(uri) }
+
+    private fun text(@StringRes resId: Int, vararg formatArgs: Any): String {
+        return AppLanguageManager.getString(this, resId, *formatArgs)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,13 +43,13 @@ class UrlHandlerActivity : ComponentActivity() {
                 "calling_package" to callingPackage
             ))
         } catch (e: Exception) {
-            android.util.Log.w(TAG, "Erro ao inicializar logger: ${e.message}")
+            android.util.Log.w(TAG, "Failed to initialize logger: ${e.message}")
         }
 
         intent?.data?.let { uri ->
             handleUrl(uri)
         } ?: run {
-            AppLogger.w(TAG, "Intent data é null — finalizando activity")
+            AppLogger.w(TAG, "Intent data is null — finishing activity")
             finish()
         }
     }
@@ -62,79 +67,79 @@ class UrlHandlerActivity : ComponentActivity() {
         )
 
         if (!isInstagram) {
-            AppLogger.i(TAG, "Link não é do Instagram — encaminhando sem limpar")
+            AppLogger.i(TAG, "Link is not from Instagram — forwarding without cleaning")
             forwardToExternalApp(uri)
             return
         }
 
         if (!hasTracking) {
-            AppLogger.i(TAG, "Link sem rastreadores conhecidos — encaminhando sem limpar")
-            Toast.makeText(this, "ℹ️ Rastreadores conhecidos não encontrados.", Toast.LENGTH_SHORT).show()
+            AppLogger.i(TAG, "Link has no known trackers — forwarding without cleaning")
+            Toast.makeText(this, text(R.string.known_trackers_not_found), Toast.LENGTH_SHORT).show()
             forwardToExternalApp(uri)
             return
         }
 
-        // Tenta limpar
+        // Try to sanitize the link.
         try {
             val cleanedUri = urlCleanerFn(uri)
-            AppLogger.i(TAG, "Link limpo com sucesso: original=$uri → limpo=$cleanedUri")
+            AppLogger.i(TAG, "Link cleaned successfully: original=$uri → cleaned=$cleanedUri")
 
             PrefsManager.clearFailed(this, uri.toString())
-            Toast.makeText(this, "✅ Link limpo!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, text(R.string.link_cleaned), Toast.LENGTH_SHORT).show()
             openInInstagramApp(cleanedUri)
 
         } catch (e: Exception) {
-            AppLogger.e(TAG, "Falha ao limpar link: $uri", e)
-            handleCleaningFailure(uri, e)
+            AppLogger.e(TAG, "Failed to clean link: $uri", e)
+            handleCleaningFailure(uri)
         }
     }
 
     /**
-     * Encaminha um link para um app externo, EXCLUINDO nosso próprio app
-     * para evitar loop infinito no chooser.
+     * Forwards a link to an external app while excluding this app itself
+     * to avoid an infinite loop in the chooser.
      */
     private fun forwardToExternalApp(uri: Uri) {
         val preferredApp = PrefsManager.getPreferredApp(this)
 
-        // Se é um link do Instagram e tem app preferido, tenta abrir direto
+        // If this is an Instagram link and a preferred app exists, try it first.
         if (UrlCleaner.isInstagramLink(uri) && preferredApp != null) {
-            AppLogger.d(TAG, "forwardToExternalApp: tentando app preferido=$preferredApp para link Instagram sem rastreadores conhecidos")
+            AppLogger.d(TAG, "forwardToExternalApp: trying preferred app=$preferredApp for Instagram link without known trackers")
             val intent = Intent(Intent.ACTION_VIEW, uri).apply {
                 setPackage(preferredApp)
             }
             try {
                 startActivity(intent)
-                AppLogger.i(TAG, "forwardToExternalApp: aberto com sucesso no app preferido=$preferredApp")
+                AppLogger.i(TAG, "forwardToExternalApp: opened successfully in preferred app=$preferredApp")
                 finish()
                 return
             } catch (e: Exception) {
-                AppLogger.e(TAG, "forwardToExternalApp: app preferido falhou=$preferredApp", e)
+                AppLogger.e(TAG, "forwardToExternalApp: preferred app failed=$preferredApp", e)
                 PrefsManager.clearPreferredApp(this)
             }
         }
 
-        // Fallback: abre no browser excluindo nosso app
+        // Fallback: open in a browser while excluding this app.
         openInBrowser(uri)
     }
 
-    private fun handleCleaningFailure(originalUri: Uri, error: Exception) {
+    private fun handleCleaningFailure(originalUri: Uri) {
         val urlKey = originalUri.toString()
 
         if (PrefsManager.isRetry(this, urlKey)) {
-            AppLogger.w(TAG, "handleCleaningFailure: 2ª tentativa — abrindo link original: $originalUri")
+            AppLogger.w(TAG, "handleCleaningFailure: second attempt — opening original link: $originalUri")
             Toast.makeText(
                 this,
-                "⚠️ Não foi possível limpar. Abrindo link original...",
+                text(R.string.could_not_clean_opening_original),
                 Toast.LENGTH_LONG
             ).show()
             PrefsManager.clearFailed(this, urlKey)
             openInInstagramApp(originalUri)
         } else {
-            AppLogger.w(TAG, "handleCleaningFailure: 1ª tentativa — bloqueando por segurança: $originalUri")
+            AppLogger.w(TAG, "handleCleaningFailure: first attempt — blocking for safety: $originalUri")
             PrefsManager.markFailed(this, urlKey)
             Toast.makeText(
                 this,
-                "🚫 Erro ao limpar link. Bloqueado por segurança.\nToque novamente para abrir mesmo assim.",
+                text(R.string.error_cleaning_link_blocked),
                 Toast.LENGTH_LONG
             ).show()
             finish()
@@ -151,15 +156,15 @@ class UrlHandlerActivity : ComponentActivity() {
             }
             try {
                 startActivity(intent)
-                AppLogger.i(TAG, "openInInstagramApp: aberto com sucesso no app preferido=$preferredApp")
+                AppLogger.i(TAG, "openInInstagramApp: opened successfully in preferred app=$preferredApp")
                 finish()
                 return
             } catch (e: Exception) {
-                AppLogger.e(TAG, "openInInstagramApp: app preferido não encontrado=$preferredApp", e)
+                AppLogger.e(TAG, "openInInstagramApp: preferred app not found=$preferredApp", e)
                 PrefsManager.clearPreferredApp(this)
                 Toast.makeText(
                     this,
-                    "App preferido não encontrado. Escolha outro.",
+                    text(R.string.preferred_app_not_found_choose_another),
                     Toast.LENGTH_SHORT
                 ).show()
             }
@@ -170,22 +175,22 @@ class UrlHandlerActivity : ComponentActivity() {
 
     private fun showAppChooser(uri: Uri) {
         val instagramApps = findInstagramApps()
-        AppLogger.d(TAG, "showAppChooser: encontrados ${instagramApps.size} apps Instagram: " +
+        AppLogger.d(TAG, "showAppChooser: found ${instagramApps.size} Instagram apps: " +
                 instagramApps.joinToString { it.activityInfo.packageName })
 
         when {
             instagramApps.isEmpty() -> {
-                AppLogger.w(TAG, "showAppChooser: nenhum app Instagram encontrado — abrindo no browser")
+                AppLogger.w(TAG, "showAppChooser: no Instagram apps found — opening in browser")
                 Toast.makeText(
                     this,
-                    "Nenhum app Instagram encontrado. Abrindo no navegador.",
+                    text(R.string.no_instagram_app_found_opening_browser),
                     Toast.LENGTH_SHORT
                 ).show()
                 openInBrowser(uri)
             }
             instagramApps.size == 1 -> {
                 val pkg = instagramApps[0].activityInfo.packageName
-                AppLogger.i(TAG, "showAppChooser: único app encontrado=$pkg — abrindo direto")
+                AppLogger.i(TAG, "showAppChooser: single app found=$pkg — opening directly")
                 startActivity(Intent(Intent.ACTION_VIEW, uri).apply { setPackage(pkg) })
                 finish()
             }
@@ -196,13 +201,13 @@ class UrlHandlerActivity : ComponentActivity() {
     }
 
     /**
-     * Abre no browser, excluindo nosso próprio app para evitar loop infinito.
-     * Usa Intent.makeMainSelectorActivity para abrir especificamente no browser.
+     * Opens a browser while excluding this app itself to avoid an infinite loop.
+     * Uses Intent.makeMainSelectorActivity to target browser apps specifically.
      */
     private fun openInBrowser(uri: Uri) {
         AppLogger.d(TAG, "openInBrowser: uri=$uri")
         try {
-            // Abordagem 1: Usar seletor de browser para evitar que nosso app intercepte
+            // Approach 1: use the browser selector to avoid app interception.
             val browserIntent = Intent.makeMainSelectorActivity(
                 Intent.ACTION_MAIN,
                 Intent.CATEGORY_APP_BROWSER
@@ -211,23 +216,23 @@ class UrlHandlerActivity : ComponentActivity() {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             startActivity(browserIntent)
-            AppLogger.i(TAG, "openInBrowser: aberto com sucesso via CATEGORY_APP_BROWSER")
+            AppLogger.i(TAG, "openInBrowser: opened successfully via CATEGORY_APP_BROWSER")
         } catch (e: Exception) {
-            AppLogger.e(TAG, "openInBrowser: fallback CATEGORY_APP_BROWSER falhou", e)
+            AppLogger.e(TAG, "openInBrowser: CATEGORY_APP_BROWSER fallback failed", e)
             try {
-                // Abordagem 2: Chooser excluindo nosso próprio componente
+                // Approach 2: chooser excluding this app component.
                 val viewIntent = Intent(Intent.ACTION_VIEW, uri).apply {
                     addCategory(Intent.CATEGORY_BROWSABLE)
                 }
-                val chooser = Intent.createChooser(viewIntent, "Abrir com").apply {
+                val chooser = Intent.createChooser(viewIntent, text(R.string.open_with)).apply {
                     val ownComponent = ComponentName(this@UrlHandlerActivity, UrlHandlerActivity::class.java)
                     putExtra(Intent.EXTRA_EXCLUDE_COMPONENTS, arrayOf(ownComponent))
                 }
                 startActivity(chooser)
-                AppLogger.i(TAG, "openInBrowser: aberto via chooser com EXTRA_EXCLUDE_COMPONENTS")
+                AppLogger.i(TAG, "openInBrowser: opened via chooser with EXTRA_EXCLUDE_COMPONENTS")
             } catch (e2: Exception) {
-                AppLogger.e(TAG, "openInBrowser: todas as abordagens falharam", e2)
-                Toast.makeText(this, "Não foi possível abrir o link.", Toast.LENGTH_LONG).show()
+                AppLogger.e(TAG, "openInBrowser: all approaches failed", e2)
+                Toast.makeText(this, text(R.string.could_not_open_link), Toast.LENGTH_LONG).show()
             }
         }
         finish()
@@ -238,26 +243,26 @@ class UrlHandlerActivity : ComponentActivity() {
         val appNames = apps.map { it.loadLabel(pm).toString() }.toTypedArray()
         val appPackages = apps.map { it.activityInfo.packageName }
 
-        AppLogger.d(TAG, "showAppChooserDialog: mostrando dialog com ${apps.size} opções")
+        AppLogger.d(TAG, "showAppChooserDialog: showing dialog with ${apps.size} options")
 
         AlertDialog.Builder(this)
-            .setTitle("Abrir com qual Instagram?")
+            .setTitle(text(R.string.open_with_which_instagram))
             .setItems(appNames) { _, which ->
                 val chosenPackage = appPackages[which]
                 val chosenLabel = appNames[which]
-                AppLogger.i(TAG, "showAppChooserDialog: usuário escolheu $chosenLabel ($chosenPackage)")
+                AppLogger.i(TAG, "showAppChooserDialog: user selected $chosenLabel ($chosenPackage)")
 
                 AlertDialog.Builder(this)
-                    .setTitle("Usar \"$chosenLabel\" sempre?")
-                    .setPositiveButton("Sempre") { _, _ ->
+                    .setTitle(text(R.string.always_use_app, chosenLabel))
+                    .setPositiveButton(text(R.string.always)) { _, _ ->
                         PrefsManager.setPreferredApp(this, chosenPackage, chosenLabel)
-                        AppLogger.i(TAG, "showAppChooserDialog: salvo como preferido=$chosenPackage")
+                        AppLogger.i(TAG, "showAppChooserDialog: saved preferred app=$chosenPackage")
                         startActivity(Intent(Intent.ACTION_VIEW, uri).apply {
                             setPackage(chosenPackage)
                         })
                         finish()
                     }
-                    .setNegativeButton("Só desta vez") { _, _ ->
+                    .setNegativeButton(text(R.string.just_once)) { _, _ ->
                         startActivity(Intent(Intent.ACTION_VIEW, uri).apply {
                             setPackage(chosenPackage)
                         })
@@ -266,7 +271,7 @@ class UrlHandlerActivity : ComponentActivity() {
                     .setOnCancelListener { finish() }
                     .show()
             }
-            .setNegativeButton("Cancelar") { _, _ -> finish() }
+            .setNegativeButton(text(R.string.cancel)) { _, _ -> finish() }
             .setOnCancelListener { finish() }
             .show()
     }
@@ -283,8 +288,8 @@ class UrlHandlerActivity : ComponentActivity() {
             packageManager.queryIntentActivities(intent, PackageManager.MATCH_ALL)
         }
         val filtered = allApps.filter { it.activityInfo.packageName != packageName }
-        AppLogger.d(TAG, "findInstagramApps: total=${allApps.size}, sem nosso app=${filtered.size}, " +
-                "todos: ${allApps.joinToString { "${it.activityInfo.packageName}/${it.activityInfo.name}" }}")
+        AppLogger.d(TAG, "findInstagramApps: total=${allApps.size}, without this app=${filtered.size}, " +
+                "all: ${allApps.joinToString { "${it.activityInfo.packageName}/${it.activityInfo.name}" }}")
         return filtered
     }
 }

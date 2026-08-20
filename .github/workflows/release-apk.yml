@@ -1,0 +1,93 @@
+name: Build and Publish Latest APK
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: latest-apk-release
+  cancel-in-progress: true
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '11'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x gradlew
+
+      - name: Build debug APK
+        run: ./gradlew assembleDebug
+
+      - name: Move rolling tag to current commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -fa latest-apk -m "Latest APK release"
+          git push origin refs/tags/latest-apk --force
+
+      - name: Prepare release asset
+        id: asset
+        shell: bash
+        run: |
+          VERSION_NAME=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts | head -n1)
+          VERSION_CODE=$(grep -oP 'versionCode = \K[0-9]+' app/build.gradle.kts | head -n1)
+          ASSET_NAME="InstaCleanLink-latest-debug.apk"
+
+          cp app/build/outputs/apk/debug/app-debug.apk "$ASSET_NAME"
+
+          {
+            echo "asset_name=$ASSET_NAME"
+            echo "version_name=$VERSION_NAME"
+            echo "version_code=$VERSION_CODE"
+            echo "short_sha=${GITHUB_SHA::7}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create or update rolling release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: latest-apk
+          RELEASE_TITLE: Latest APK
+          ASSET_NAME: ${{ steps.asset.outputs.asset_name }}
+          VERSION_NAME: ${{ steps.asset.outputs.version_name }}
+          VERSION_CODE: ${{ steps.asset.outputs.version_code }}
+          SHORT_SHA: ${{ steps.asset.outputs.short_sha }}
+        run: |
+          NOTES=$(cat <<EOF
+          Debug APK automatically generated from commit ${GITHUB_SHA}.
+
+          - App version: ${VERSION_NAME} (${VERSION_CODE})
+          - Branch: ${GITHUB_REF_NAME}
+          - Short commit: ${SHORT_SHA}
+          - Workflow: ${GITHUB_WORKFLOW}
+
+          Note: this asset is a debug build APK, useful for quick downloads and testing without requiring private signing keys.
+          EOF
+          )
+
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            gh release edit "$TAG_NAME" --title "$RELEASE_TITLE" --notes "$NOTES"
+          else
+            gh release create "$TAG_NAME" --title "$RELEASE_TITLE" --notes "$NOTES"
+          fi
+
+          gh release upload "$TAG_NAME" "$ASSET_NAME" --clobber

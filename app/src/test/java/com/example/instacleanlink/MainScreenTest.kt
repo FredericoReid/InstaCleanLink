@@ -1,8 +1,10 @@
 package com.example.instacleanlink
 
 import android.content.Context
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -27,6 +29,8 @@ class MainScreenTest {
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
         PrefsManager.clearPreferredApp(context)
+        PrefsManager.clearAppLanguage(context)
+        AppLanguageManager.setAppLanguage(context, AppLanguage.ENGLISH)
     }
 
     @Test
@@ -37,7 +41,7 @@ class MainScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Como funciona").assertIsDisplayed()
+        composeTestRule.onNodeWithText("How it works").assertIsDisplayed()
     }
 
     @Test
@@ -48,8 +52,8 @@ class MainScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Ao clicar em links", substring = true).assertIsDisplayed()
-        composeTestRule.onNodeWithText("Ao compartilhar", substring = true).assertIsDisplayed()
+        composeTestRule.onNodeWithText("When opening links", substring = true).assertIsDisplayed()
+        composeTestRule.onNodeWithText("When sharing text", substring = true).assertIsDisplayed()
     }
 
     @Test
@@ -60,7 +64,7 @@ class MainScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("App Instagram preferido").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Preferred Instagram app").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -71,8 +75,8 @@ class MainScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Nenhum app definido").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Será perguntado a cada vez").assertIsDisplayed()
+        composeTestRule.onNodeWithText("No app selected").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("You will be asked every time").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -85,8 +89,8 @@ class MainScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Abrindo sempre com:").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Instagram").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Always opening with:").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Instagram").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -99,12 +103,12 @@ class MainScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Resetar").performScrollTo().performClick()
+        composeTestRule.onNodeWithText("Reset").performScrollTo().performClick()
 
         composeTestRule.waitForIdle()
 
-        composeTestRule.onNodeWithText("Nenhum app definido").performScrollTo().assertIsDisplayed()
-        composeTestRule.onNodeWithText("Será perguntado a cada vez").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("No app selected").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("You will be asked every time").performScrollTo().assertIsDisplayed()
         assertNull(PrefsManager.getPreferredApp(context))
     }
 
@@ -116,7 +120,7 @@ class MainScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Alterar").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Change").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -128,19 +132,35 @@ class MainScreenTest {
         }
 
         // Reset button should NOT exist when no app is set
-        composeTestRule.onNodeWithText("Resetar").assertDoesNotExist()
+        composeTestRule.onAllNodesWithText("Reset").assertCountEquals(0)
     }
 
     @Test
-    fun `clicking alterar shows app picker dialog`() {
+    fun `clicking change shows app picker dialog`() {
         composeTestRule.setContent {
             InstaCleanLinkTheme {
                 MainScreen()
             }
         }
 
-        composeTestRule.onNodeWithText("Alterar").performScrollTo().performClick()
+        composeTestRule.onNodeWithText("Change").performScrollTo().performClick()
 
-        composeTestRule.onNodeWithText("Escolha o app Instagram").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Choose an Instagram app").assertIsDisplayed()
+    }
+
+    @Test
+    fun `clicking Portuguese updates the interface language`() {
+        composeTestRule.setContent {
+            InstaCleanLinkTheme {
+                MainScreen()
+            }
+        }
+
+        composeTestRule.onNodeWithText("Portuguese").performScrollTo().performClick()
+
+        composeTestRule.waitForIdle()
+
+        composeTestRule.onNodeWithText("Como funciona").assertIsDisplayed()
+        assertEquals("pt", PrefsManager.getAppLanguageCode(context))
     }
 }

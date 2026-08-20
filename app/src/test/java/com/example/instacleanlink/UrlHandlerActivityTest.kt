@@ -19,6 +19,8 @@ class UrlHandlerActivityTest {
     fun setUp() {
         val context = ApplicationProvider.getApplicationContext<android.app.Application>()
         PrefsManager.clearPreferredApp(context)
+        PrefsManager.clearAppLanguage(context)
+        AppLanguageManager.setAppLanguage(context, AppLanguage.ENGLISH)
     }
 
     private fun buildViewIntent(url: String): Intent {
@@ -121,6 +123,21 @@ class UrlHandlerActivityTest {
         val intent = buildViewIntent("https://www.instagram.com/p/ABC123?utm_source=share")
         Robolectric.buildActivity(UrlHandlerActivity::class.java, intent)
             .create().get()
+        assertEquals(
+            "ℹ️ No known trackers were found.",
+            ShadowToast.getTextOfLatestToast()
+        )
+    }
+
+    @Test
+    fun `configured Portuguese language localizes user messages`() {
+        val context = ApplicationProvider.getApplicationContext<android.app.Application>()
+        AppLanguageManager.setAppLanguage(context, AppLanguage.PORTUGUESE)
+        val intent = buildViewIntent("https://www.instagram.com/p/ABC123?utm_source=share")
+
+        Robolectric.buildActivity(UrlHandlerActivity::class.java, intent)
+            .create().get()
+
         assertEquals(
             "ℹ️ Rastreadores conhecidos não encontrados.",
             ShadowToast.getTextOfLatestToast()

@@ -1,0 +1,34 @@
+<resources>
+    <string name="app_name">InstaClean Link</string>
+    <string name="share_with">Compartilhar com</string>
+    <string name="how_it_works_title">Como funciona</string>
+    <string name="how_it_works_description">Este app limpa links do Instagram automaticamente, removendo rastreadores de privacidade conhecidos (igsh, igshid e igsi).\n\n• Ao abrir links: ele limpa antes de abrir\n• Ao compartilhar texto: ele limpa antes de enviar\n\nSe não houver rastreadores conhecidos, o app avisa antes de abrir o link.\n\nSe a limpeza falhar, o link é bloqueado na primeira tentativa para proteger sua privacidade. Toque novamente para abrir o link original mesmo assim.</string>
+    <string name="language_title">Idioma</string>
+    <string name="current_language">Idioma atual: %1$s</string>
+    <string name="language_english">Inglês</string>
+    <string name="language_portuguese">Português</string>
+    <string name="preferred_instagram_app_title">App preferido do Instagram</string>
+    <string name="opening_always_with">Abrindo sempre com:</string>
+    <string name="no_app_set">Nenhum app selecionado</string>
+    <string name="ask_every_time">Você será perguntado sempre</string>
+    <string name="change">Alterar</string>
+    <string name="reset">Resetar</string>
+    <plurals name="instagram_apps_found">
+        <item quantity="one">%d app do Instagram encontrado</item>
+        <item quantity="other">%d apps do Instagram encontrados</item>
+    </plurals>
+    <string name="choose_instagram_app">Escolha um app do Instagram</string>
+    <string name="cancel">Cancelar</string>
+    <string name="known_trackers_not_found">ℹ️ Rastreadores conhecidos não encontrados.</string>
+    <string name="link_cleaned">✅ Link limpo!</string>
+    <string name="could_not_clean_opening_original">⚠️ Não foi possível limpar o link. Abrindo o link original…</string>
+    <string name="error_cleaning_link_blocked">🚫 Erro ao limpar o link. Bloqueado por segurança.\nToque novamente para abrir mesmo assim.</string>
+    <string name="preferred_app_not_found_choose_another">App preferido não encontrado. Escolha outro.</string>
+    <string name="no_instagram_app_found_opening_browser">Nenhum app do Instagram encontrado. Abrindo no navegador.</string>
+    <string name="could_not_open_link">Não foi possível abrir o link.</string>
+    <string name="open_with">Abrir com</string>
+    <string name="open_with_which_instagram">Abrir com qual app do Instagram?</string>
+    <string name="always_use_app">Usar &quot;%1$s&quot; sempre?</string>
+    <string name="always">Sempre</string>
+    <string name="just_once">Só desta vez</string>
+</resources>

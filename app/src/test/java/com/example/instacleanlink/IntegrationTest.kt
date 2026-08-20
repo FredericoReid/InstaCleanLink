@@ -18,7 +18,7 @@ import androidx.test.core.app.ApplicationProvider
  * These tests verify the full journey:
  * - User clicks a link → intercepted → cleaned → toast shown → opened in correct app
  * - Error scenarios with retry logic (1st fail blocks, 2nd fail allows)
- * - Share intent flow (text with rastreadores conhecidos → cleaned → sent to WhatsApp)
+ * - Share intent flow (text with known trackers → cleaned → sent to WhatsApp)
  * - App chooser and preferred app flows
  */
 @RunWith(RobolectricTestRunner::class)
@@ -30,6 +30,8 @@ class IntegrationTest {
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
         PrefsManager.clearPreferredApp(context)
+        PrefsManager.clearAppLanguage(context)
+        AppLanguageManager.setAppLanguage(context, AppLanguage.ENGLISH)
         ShadowToast.reset()
     }
 
@@ -37,8 +39,8 @@ class IntegrationTest {
         Intent(Intent.ACTION_VIEW, Uri.parse(url))
 
     // ===================================================================
-    // FLOW 1: User clicks a real Instagram link with rastreador conhecido
-    // Expected: rastreadores removidos, "Link limpo" toast, opens in Instagram app
+    // FLOW 1: User clicks a real Instagram link with a known tracker
+    // Expected: trackers removed, "Link cleaned" toast, opens in Instagram app
     // ===================================================================
 
     @Test
@@ -181,7 +183,7 @@ class IntegrationTest {
         ).create().get()
 
         assertEquals(
-            "ℹ️ Rastreadores conhecidos não encontrados.",
+            "ℹ️ No known trackers were found.",
             ShadowToast.getTextOfLatestToast()
         )
     }
@@ -219,7 +221,7 @@ class IntegrationTest {
         assertNotNull("Error toast should be shown", toastText)
         assertTrue(
             "Toast should mention blocking: '$toastText'",
-            toastText!!.contains("Bloqueado") || toastText.contains("Erro")
+            toastText!!.contains("Blocked") || toastText.contains("Error")
         )
 
         // 4) URL should be marked as failed in PrefsManager
@@ -266,7 +268,7 @@ class IntegrationTest {
         assertNotNull("Warning toast should be shown", toastText)
         assertTrue(
             "Toast should indicate it could not clean: '$toastText'",
-            toastText!!.contains("Não foi possível") || toastText.contains("original")
+            toastText!!.contains("Could not clean") || toastText.contains("original")
         )
 
         // 4) Failure record should be cleared after retry
@@ -321,7 +323,7 @@ class IntegrationTest {
 
     @Test
     fun `FLOW - share intent cleans known trackers from text and sends to WhatsApp`() {
-        val originalText = "Olha esse post incrível! https://www.instagram.com/p/DAi3KuVRIJ4/?igsh=one&igsi=two&igshid=three Muito bom!"
+        val originalText = "Check out this post! https://www.instagram.com/p/DAi3KuVRIJ4/?igsh=one&igsi=two&igshid=three So good!"
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
             putExtra(Intent.EXTRA_TEXT, originalText)
@@ -346,13 +348,13 @@ class IntegrationTest {
         assertFalse("igshid must be removed from shared text", sharedText.contains("igshid="))
         assertFalse("igsi must be removed from shared text", sharedText.contains("igsi="))
         assertTrue("Post ID should remain", sharedText.contains("DAi3KuVRIJ4"))
-        assertTrue("Surrounding text preserved", sharedText.contains("Olha esse post"))
-        assertTrue("Surrounding text preserved", sharedText.contains("Muito bom!"))
+        assertTrue("Surrounding text preserved", sharedText.contains("Check out this post"))
+        assertTrue("Surrounding text preserved", sharedText.contains("So good!"))
     }
 
     @Test
     fun `FLOW - share intent with multiple instagram links cleans all`() {
-        val text = "Post1: https://www.instagram.com/p/AAA/?igsh=x1&igsi=y1 e Post2: https://www.instagram.com/p/BBB/?igshid=x2"
+        val text = "Post1: https://www.instagram.com/p/AAA/?igsh=x1&igsi=y1 and Post2: https://www.instagram.com/p/BBB/?igshid=x2"
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
             putExtra(Intent.EXTRA_TEXT, text)

@@ -1,3 +1,34 @@
 <resources>
     <string name="app_name">InstaClean Link</string>
+    <string name="share_with">Share with</string>
+    <string name="how_it_works_title">How it works</string>
+    <string name="how_it_works_description">This app automatically cleans Instagram links by removing known privacy trackers (igsh, igshid, and igsi).\n\n• When opening links: it cleans them before opening\n• When sharing text: it cleans them before sending\n\nIf no known trackers are found, the app lets you know before opening the link.\n\nIf cleaning fails, the link is blocked on the first attempt to protect your privacy. Tap it again to open the original link anyway.</string>
+    <string name="language_title">Language</string>
+    <string name="current_language">Current language: %1$s</string>
+    <string name="language_english">English</string>
+    <string name="language_portuguese">Portuguese</string>
+    <string name="preferred_instagram_app_title">Preferred Instagram app</string>
+    <string name="opening_always_with">Always opening with:</string>
+    <string name="no_app_set">No app selected</string>
+    <string name="ask_every_time">You will be asked every time</string>
+    <string name="change">Change</string>
+    <string name="reset">Reset</string>
+    <plurals name="instagram_apps_found">
+        <item quantity="one">%d Instagram app found</item>
+        <item quantity="other">%d Instagram apps found</item>
+    </plurals>
+    <string name="choose_instagram_app">Choose an Instagram app</string>
+    <string name="cancel">Cancel</string>
+    <string name="known_trackers_not_found">ℹ️ No known trackers were found.</string>
+    <string name="link_cleaned">✅ Link cleaned!</string>
+    <string name="could_not_clean_opening_original">⚠️ Could not clean the link. Opening the original link…</string>
+    <string name="error_cleaning_link_blocked">🚫 Error while cleaning the link. Blocked for safety.\nTap again to open it anyway.</string>
+    <string name="preferred_app_not_found_choose_another">Preferred app not found. Please choose another one.</string>
+    <string name="no_instagram_app_found_opening_browser">No Instagram app found. Opening in the browser.</string>
+    <string name="could_not_open_link">Could not open the link.</string>
+    <string name="open_with">Open with</string>
+    <string name="open_with_which_instagram">Open with which Instagram app?</string>
+    <string name="always_use_app">Always use &quot;%1$s&quot;?</string>
+    <string name="always">Always</string>
+    <string name="just_once">Just once</string>
 </resources>
