@@ -100,8 +100,8 @@ class IntegrationTest {
     }
 
     @Test
-    fun `FLOW - real instagram link with igsh igshid and igsi is fully cleaned`() {
-        val url = "https://www.instagram.com/p/DcOuLE2nM6c/?igsh=one&igsi=two&igshid=three&utm_source=share"
+    fun `FLOW - real instagram link with all known trackers is fully cleaned`() {
+        val url = "https://www.instagram.com/p/DcOuLE2nM6c/?igsh=one&igsi=two&igshid=three&stkn=four&utm_source=share"
         PrefsManager.setPreferredApp(context, "com.instagram.android", "Instagram")
 
         val activity = Robolectric.buildActivity(
@@ -115,6 +115,7 @@ class IntegrationTest {
         assertNull("igsh removed", uri.getQueryParameter("igsh"))
         assertNull("igshid removed", uri.getQueryParameter("igshid"))
         assertNull("igsi removed", uri.getQueryParameter("igsi"))
+        assertNull("stkn removed", uri.getQueryParameter("stkn"))
         assertEquals("utm_source preserved", "share", uri.getQueryParameter("utm_source"))
     }
 
@@ -323,7 +324,7 @@ class IntegrationTest {
 
     @Test
     fun `FLOW - share intent cleans known trackers from text and sends to WhatsApp`() {
-        val originalText = "Check out this post! https://www.instagram.com/p/DAi3KuVRIJ4/?igsh=one&igsi=two&igshid=three So good!"
+        val originalText = "Check out this post! https://www.instagram.com/p/DAi3KuVRIJ4/?igsh=one&igsi=two&igshid=three&stkn=four So good!"
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
             putExtra(Intent.EXTRA_TEXT, originalText)
@@ -347,6 +348,7 @@ class IntegrationTest {
         assertFalse("igsh must be removed from shared text", sharedText!!.contains("igsh="))
         assertFalse("igshid must be removed from shared text", sharedText.contains("igshid="))
         assertFalse("igsi must be removed from shared text", sharedText.contains("igsi="))
+        assertFalse("stkn must be removed from shared text", sharedText.contains("stkn="))
         assertTrue("Post ID should remain", sharedText.contains("DAi3KuVRIJ4"))
         assertTrue("Surrounding text preserved", sharedText.contains("Check out this post"))
         assertTrue("Surrounding text preserved", sharedText.contains("So good!"))
@@ -354,7 +356,7 @@ class IntegrationTest {
 
     @Test
     fun `FLOW - share intent with multiple instagram links cleans all`() {
-        val text = "Post1: https://www.instagram.com/p/AAA/?igsh=x1&igsi=y1 and Post2: https://www.instagram.com/p/BBB/?igshid=x2"
+        val text = "Post1: https://www.instagram.com/p/AAA/?igsh=x1&igsi=y1 and Post2: https://www.instagram.com/p/BBB/?igshid=x2&stkn=x3"
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
             putExtra(Intent.EXTRA_TEXT, text)
@@ -372,6 +374,7 @@ class IntegrationTest {
         assertFalse("All igsh params must be removed", sharedText!!.contains("igsh="))
         assertFalse("All igshid params must be removed", sharedText.contains("igshid="))
         assertFalse("All igsi params must be removed", sharedText.contains("igsi="))
+        assertFalse("All stkn params must be removed", sharedText.contains("stkn="))
         assertTrue("Post AAA preserved", sharedText.contains("/p/AAA"))
         assertTrue("Post BBB preserved", sharedText.contains("/p/BBB"))
     }

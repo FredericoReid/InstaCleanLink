@@ -27,10 +27,10 @@ class UrlHandlerActivityTest {
         return Intent(Intent.ACTION_VIEW, Uri.parse(url))
     }
 
-    // --- Link without igsh: forwards to external app (no loop) ---
+    // --- Link without known trackers: forwards to external app (no loop) ---
 
     @Test
-    fun `link without igsh is forwarded to external app`() {
+    fun `link without known trackers is forwarded to external app`() {
         val intent = buildViewIntent("https://www.instagram.com/p/ABC123")
         val activity = Robolectric.buildActivity(UrlHandlerActivity::class.java, intent)
             .create().get()
@@ -47,7 +47,7 @@ class UrlHandlerActivityTest {
     }
 
     @Test
-    fun `link without igsh uses preferred app if set`() {
+    fun `link without known trackers uses preferred app if set`() {
         val context = ApplicationProvider.getApplicationContext<android.app.Application>()
         PrefsManager.setPreferredApp(context, "com.instagram.lite", "Instagram Lite")
         val intent = buildViewIntent("https://www.instagram.com/p/ABC123")
@@ -71,7 +71,7 @@ class UrlHandlerActivityTest {
         assertTrue("Activity should finish", activity.isFinishing)
     }
 
-    // --- Link with igsh: cleans and shows toast ---
+    // --- Link with known trackers: cleans and shows toast ---
 
     @Test
     fun `link with igsh is cleaned and shows toast`() {
@@ -104,7 +104,7 @@ class UrlHandlerActivityTest {
     fun `link with igsh igshid and igsi removes all known trackers`() {
         val context = ApplicationProvider.getApplicationContext<android.app.Application>()
         PrefsManager.setPreferredApp(context, "com.instagram.android", "Instagram")
-        val intent = buildViewIntent("https://www.instagram.com/p/ABC?igsh=track&igshid=track2&igsi=track3&utm_source=share")
+        val intent = buildViewIntent("https://www.instagram.com/p/ABC?igsh=track&igshid=track2&igsi=track3&stkn=track4&utm_source=share")
         val activity = Robolectric.buildActivity(UrlHandlerActivity::class.java, intent)
             .create().get()
         val nextIntent = shadowOf(activity).nextStartedActivity
@@ -113,7 +113,22 @@ class UrlHandlerActivityTest {
         assertNull(cleanedUri.getQueryParameter("igsh"))
         assertNull(cleanedUri.getQueryParameter("igshid"))
         assertNull(cleanedUri.getQueryParameter("igsi"))
+        assertNull(cleanedUri.getQueryParameter("stkn"))
         assertEquals("share", cleanedUri.getQueryParameter("utm_source"))
+    }
+
+    @Test
+    fun `link with stkn is cleaned and forwarded without stkn`() {
+        val context = ApplicationProvider.getApplicationContext<android.app.Application>()
+        PrefsManager.setPreferredApp(context, "com.instagram.android", "Instagram")
+        val intent = buildViewIntent("https://www.instagram.com/p/ABC123?stkn=tracking123&utm_medium=copy")
+        val activity = Robolectric.buildActivity(UrlHandlerActivity::class.java, intent)
+            .create().get()
+        val nextIntent = shadowOf(activity).nextStartedActivity
+        assertNotNull(nextIntent)
+        val cleanedUri = nextIntent.data!!
+        assertNull(cleanedUri.getQueryParameter("stkn"))
+        assertEquals("copy", cleanedUri.getQueryParameter("utm_medium"))
     }
 
     @Test
@@ -147,7 +162,7 @@ class UrlHandlerActivityTest {
     // --- ig.me links ---
 
     @Test
-    fun `ig me link without igsh is forwarded`() {
+    fun `ig me link without known trackers is forwarded`() {
         val intent = buildViewIntent("https://ig.me/abc123")
         val activity = Robolectric.buildActivity(UrlHandlerActivity::class.java, intent)
             .create().get()

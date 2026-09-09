@@ -24,6 +24,7 @@ class MainActivityTest {
         assertFalse("igsh should be removed", text.contains("igsh="))
         assertFalse("igshid should be removed", text.contains("igshid="))
         assertFalse("igsi should be removed", text.contains("igsi="))
+        assertFalse("stkn should be removed", text.contains("stkn="))
     }
 
     // --- Normal launch (no share intent) ---
@@ -41,7 +42,7 @@ class MainActivityTest {
     fun `share intent with instagram link cleans known trackers and finishes`() {
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
-            putExtra(Intent.EXTRA_TEXT, "Check this post https://www.instagram.com/p/ABC?igsh=track123&igsi=track456")
+            putExtra(Intent.EXTRA_TEXT, "Check this post https://www.instagram.com/p/ABC?igsh=track123&igsi=track456&stkn=track789")
         }
         val activity = Robolectric.buildActivity(MainActivity::class.java, intent)
             .create().get()
@@ -66,7 +67,7 @@ class MainActivityTest {
     fun `share intent targets whatsapp package`() {
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
-            putExtra(Intent.EXTRA_TEXT, "Link https://www.instagram.com/p/X?igsh=y&igshid=z")
+            putExtra(Intent.EXTRA_TEXT, "Link https://www.instagram.com/p/X?igsh=y&igshid=z&stkn=w")
         }
         val activity = Robolectric.buildActivity(MainActivity::class.java, intent)
             .create().get()

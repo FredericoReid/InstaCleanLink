@@ -2,7 +2,7 @@
     <string name="app_name">InstaClean Link</string>
     <string name="share_with">Compartilhar com</string>
     <string name="how_it_works_title">Como funciona</string>
-    <string name="how_it_works_description">Este app limpa links do Instagram automaticamente, removendo rastreadores de privacidade conhecidos (igsh, igshid e igsi).\n\n• Ao abrir links: ele limpa antes de abrir\n• Ao compartilhar texto: ele limpa antes de enviar\n\nSe não houver rastreadores conhecidos, o app avisa antes de abrir o link.\n\nSe a limpeza falhar, o link é bloqueado na primeira tentativa para proteger sua privacidade. Toque novamente para abrir o link original mesmo assim.</string>
+    <string name="how_it_works_description">Este app limpa links do Instagram automaticamente, removendo rastreadores de privacidade conhecidos (igsh, igshid, igsi e stkn).\n\n• Ao abrir links: ele limpa antes de abrir\n• Ao compartilhar texto: ele limpa antes de enviar\n\nSe não houver rastreadores conhecidos, o app avisa antes de abrir o link.\n\nSe a limpeza falhar, o link é bloqueado na primeira tentativa para proteger sua privacidade. Toque novamente para abrir o link original mesmo assim.</string>
     <string name="language_title">Idioma</string>
     <string name="current_language">Idioma atual: %1$s</string>
     <string name="language_english">Inglês</string>

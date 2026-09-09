@@ -7,6 +7,7 @@ The app currently sanitizes these known parameters:
 - `igsh`
 - `igshid`
 - `igsi`
+- `stkn`
 
 ## What the app does
 
@@ -23,7 +24,7 @@ The app currently sanitizes these known parameters:
 ### When opening a link
 
 1. The app checks whether the link belongs to Instagram.
-2. If it finds `igsh`, `igshid`, or `igsi`, it removes those parameters.
+2. If it finds `igsh`, `igshid`, `igsi`, or `stkn`, it removes those parameters.
 3. If sanitization succeeds, the app shows a success message and opens the cleaned link.
 4. If no known trackers are found, the app informs the user and opens the link normally.
 5. If sanitization fails:
@@ -33,7 +34,7 @@ The app currently sanitizes these known parameters:
 ### When sharing text
 
 1. The app scans the shared text for Instagram links.
-2. It removes `igsh`, `igshid`, and `igsi` from each supported link.
+2. It removes `igsh`, `igshid`, `igsi`, and `stkn` from each supported link.
 3. It forwards the sanitized text, prioritizing WhatsApp.
 
 ## Supported link hosts
@@ -203,5 +204,6 @@ The app currently removes:
 - `igsh`
 - `igshid`
 - `igsi`
+- `stkn`
 
 while preserving legitimate non-tracking parameters in the same URL.

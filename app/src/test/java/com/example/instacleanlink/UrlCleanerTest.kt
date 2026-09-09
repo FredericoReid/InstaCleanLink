@@ -13,6 +13,7 @@ class UrlCleanerTest {
         assertFalse(text.contains("igsh="))
         assertFalse(text.contains("igshid="))
         assertFalse(text.contains("igsi="))
+        assertFalse(text.contains("stkn="))
     }
 
     // --- isInstagramLink ---
@@ -80,6 +81,12 @@ class UrlCleanerTest {
     }
 
     @Test
+    fun `hasTrackingParam returns true when stkn is present`() {
+        val uri = Uri.parse("https://www.instagram.com/p/ABC123?stkn=abc123")
+        assertTrue(UrlCleaner.hasTrackingParam(uri))
+    }
+
+    @Test
     fun `hasTrackingParam returns false when igsh is absent`() {
         val uri = Uri.parse("https://www.instagram.com/p/ABC123")
         assertFalse(UrlCleaner.hasTrackingParam(uri))
@@ -99,8 +106,8 @@ class UrlCleanerTest {
 
     @Test
     fun `findTrackingParams returns all known instagram trackers`() {
-        val uri = Uri.parse("https://www.instagram.com/p/ABC123?igsh=one&igsi=two&igshid=three&utm_source=share")
-        assertEquals(setOf("igsh", "igsi", "igshid"), UrlCleaner.findTrackingParams(uri))
+        val uri = Uri.parse("https://www.instagram.com/p/ABC123?igsh=one&igsi=two&igshid=three&stkn=four&utm_source=share")
+        assertEquals(setOf("igsh", "igsi", "igshid", "stkn"), UrlCleaner.findTrackingParams(uri))
     }
 
     // --- cleanUri ---
@@ -123,12 +130,13 @@ class UrlCleanerTest {
     }
 
     @Test
-    fun `cleanUri removes igsh igshid and igsi together`() {
-        val uri = Uri.parse("https://www.instagram.com/p/ABC123?igsh=abc&igshid=def&igsi=ghi&utm_source=share")
+    fun `cleanUri removes all known trackers together`() {
+        val uri = Uri.parse("https://www.instagram.com/p/ABC123?igsh=abc&igshid=def&igsi=ghi&stkn=jkl&utm_source=share")
         val cleaned = UrlCleaner.cleanUri(uri)
         assertNull(cleaned.getQueryParameter("igsh"))
         assertNull(cleaned.getQueryParameter("igshid"))
         assertNull(cleaned.getQueryParameter("igsi"))
+        assertNull(cleaned.getQueryParameter("stkn"))
         assertEquals("share", cleaned.getQueryParameter("utm_source"))
     }
 
@@ -166,7 +174,7 @@ class UrlCleanerTest {
 
     @Test
     fun `cleanInstagramUrlsInText removes all known instagram trackers from text`() {
-        val text = "Olha https://www.instagram.com/p/ABC/?igsh=one&igsi=two&igshid=three&utm_source=share agora"
+        val text = "Olha https://www.instagram.com/p/ABC/?igsh=one&igsi=two&igshid=three&stkn=four&utm_source=share agora"
         val cleaned = UrlCleaner.cleanInstagramUrlsInText(text)
         assertTrackingParamsRemoved(cleaned)
         assertTrue(cleaned.contains("utm_source=share"))
