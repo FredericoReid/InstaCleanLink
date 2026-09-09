@@ -7,7 +7,7 @@ import android.net.Uri
  */
 object UrlCleaner {
 
-    private val TRACKING_PARAMS = setOf("igsh", "igshid", "igsi")
+    private val TRACKING_PARAMS = setOf("igsh", "igshid", "igsi", "stkn")
 
     /**
      * Checks if a URI is an Instagram link.
