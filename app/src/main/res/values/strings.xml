@@ -2,7 +2,7 @@
     <string name="app_name">InstaClean Link</string>
     <string name="share_with">Share with</string>
     <string name="how_it_works_title">How it works</string>
-    <string name="how_it_works_description">This app automatically cleans Instagram links by removing known privacy trackers (igsh, igshid, igsi, and stkn).\n\n• When opening links: it cleans them before opening\n• When sharing text: it cleans them before sending\n\nIf no known trackers are found, the app lets you know before opening the link.\n\nIf cleaning fails, the link is blocked on the first attempt to protect your privacy. Tap it again to open the original link anyway.</string>
+    <string name="how_it_works_description">This app automatically cleans Instagram links by removing known and rotating privacy trackers (such as igsh, igshid, igsi, stkn, dlrf, psln, and cplk).\n\n• When opening links: it cleans them before opening\n• When sharing text: it cleans them before sending\n\nIf no trackers are found, the app lets you know before opening the link.\n\nIf cleaning fails, the link is blocked on the first attempt to protect your privacy. Tap it again to open the original link anyway.</string>
     <string name="language_title">Language</string>
     <string name="current_language">Current language: %1$s</string>
     <string name="language_english">English</string>

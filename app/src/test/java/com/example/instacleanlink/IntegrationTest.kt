@@ -479,4 +479,30 @@ class IntegrationTest {
         assertNull("igsh removed", uri.getQueryParameter("igsh"))
         assertTrue("No query params should remain", uri.queryParameterNames.isEmpty())
     }
+
+    @Test
+    fun `FLOW - reel links with rotating trackers dlrf psln cplk and unknown future tracker are cleaned`() {
+        PrefsManager.setPreferredApp(context, "com.instagram.android", "Instagram")
+        val sampleUrls = listOf(
+            "https://www.instagram.com/reel/DeE9LWlOqV-/?dlrf=bDhpeDFlZ3Jxem5i",
+            "https://www.instagram.com/reel/DeczrQ1PPmJ/?psln=YjkwcThnd2dxZG82",
+            "https://www.instagram.com/reel/DeX9deetwap/?cplk=MWtyZDNxY3R6ZGRwbA==",
+            "https://www.instagram.com/reel/DeX9deetwap/?future_trk=MWtyZDNxY3R6ZGRwbA=="
+        )
+
+        for (url in sampleUrls) {
+            val activity = Robolectric.buildActivity(
+                UrlHandlerActivity::class.java,
+                buildViewIntent(url)
+            ).create().get()
+
+            val launched = shadowOf(activity).nextStartedActivity
+            assertNotNull("Intent should be launched for $url", launched)
+            val cleanedUri = launched.data!!
+            assertTrue(
+                "All tracking query params should be removed from $url, got $cleanedUri",
+                cleanedUri.queryParameterNames.isEmpty()
+            )
+        }
+    }
 }

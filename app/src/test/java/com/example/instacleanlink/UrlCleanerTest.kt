@@ -14,6 +14,9 @@ class UrlCleanerTest {
         assertFalse(text.contains("igshid="))
         assertFalse(text.contains("igsi="))
         assertFalse(text.contains("stkn="))
+        assertFalse(text.contains("dlrf="))
+        assertFalse(text.contains("psln="))
+        assertFalse(text.contains("cplk="))
     }
 
     // --- isInstagramLink ---
@@ -253,5 +256,81 @@ class UrlCleanerTest {
         val cleaned = UrlCleaner.cleanInstagramUrlsInText(text)
         assertTrackingParamsRemoved(cleaned)
         assertTrue(cleaned.contains("https://www.instagram.com/p/ABC"))
+    }
+
+    // --- New rotating trackers (dlrf, psln, cplk, rpxt, srtk, obrf, xtok, mdxt, exln, vrfl) & heuristic detection ---
+
+    @Test
+    fun `cleanUri removes dlrf parameter from reel link`() {
+        val uri = Uri.parse("https://www.instagram.com/reel/DeE9LWlOqV-/?dlrf=bDhpeDFlZ3Jxem5i")
+        assertTrue(UrlCleaner.hasTrackingParam(uri))
+        val cleaned = UrlCleaner.cleanUri(uri)
+        assertNull(cleaned.getQueryParameter("dlrf"))
+        assertEquals("https://www.instagram.com/reel/DeE9LWlOqV-/", cleaned.toString())
+    }
+
+    @Test
+    fun `cleanUri removes psln parameter from reel link`() {
+        val uri = Uri.parse("https://www.instagram.com/reel/DeczrQ1PPmJ/?psln=YjkwcThnd2dxZG82")
+        assertTrue(UrlCleaner.hasTrackingParam(uri))
+        val cleaned = UrlCleaner.cleanUri(uri)
+        assertNull(cleaned.getQueryParameter("psln"))
+        assertEquals("https://www.instagram.com/reel/DeczrQ1PPmJ/", cleaned.toString())
+    }
+
+    @Test
+    fun `cleanUri removes cplk parameter from reel link`() {
+        val uri = Uri.parse("https://www.instagram.com/reel/DeX9deetwap/?cplk=MWtyZDNxY3R6ZGRwbA==")
+        assertTrue(UrlCleaner.hasTrackingParam(uri))
+        val cleaned = UrlCleaner.cleanUri(uri)
+        assertNull(cleaned.getQueryParameter("cplk"))
+        assertEquals("https://www.instagram.com/reel/DeX9deetwap/", cleaned.toString())
+    }
+
+    @Test
+    fun `cleanUri removes all 2026 rotating 4-letter trackers`() {
+        val rotatingParams = listOf("dlrf", "psln", "cplk", "rpxt", "srtk", "obrf", "xtok", "mdxt", "exln", "vrfl")
+        for (param in rotatingParams) {
+            val uri = Uri.parse("https://www.instagram.com/reel/DeE9LWlOqV-/?$param=bDhpeDFlZ3Jxem5i")
+            assertTrue("Should detect $param as tracker", UrlCleaner.hasTrackingParam(uri))
+            val cleaned = UrlCleaner.cleanUri(uri)
+            assertNull("$param should be removed", cleaned.getQueryParameter(param))
+            assertEquals("https://www.instagram.com/reel/DeE9LWlOqV-/", cleaned.toString())
+        }
+    }
+
+    @Test
+    fun `cleanUri removes unknown future rotating 4-letter tracker via heuristic on any route`() {
+        // Brand-new 4-letter parameter name not in static list, carrying a Base64 Instagram share token
+        val uri = Uri.parse("https://www.instagram.com/username/?zqwx=bDhpeDFlZ3Jxem5i")
+        assertTrue(UrlCleaner.hasTrackingParam(uri))
+        val cleaned = UrlCleaner.cleanUri(uri)
+        assertNull(cleaned.getQueryParameter("zqwx"))
+        assertEquals("https://www.instagram.com/username/", cleaned.toString())
+    }
+
+    @Test
+    fun `cleanUri removes unknown tracker on content path while preserving img_index and hl`() {
+        val uri = Uri.parse("https://www.instagram.com/p/DW7gmcKDPnG/?img_index=3&hl=pt&brand_new_tracker=some_val")
+        assertTrue(UrlCleaner.hasTrackingParam(uri))
+        val cleaned = UrlCleaner.cleanUri(uri)
+        assertNull(cleaned.getQueryParameter("brand_new_tracker"))
+        assertEquals("3", cleaned.getQueryParameter("img_index"))
+        assertEquals("pt", cleaned.getQueryParameter("hl"))
+    }
+
+    @Test
+    fun `cleanInstagramUrlsInText cleans dlrf psln and cplk links in shared message`() {
+        val text = """
+            Veja esses reels:
+            https://www.instagram.com/reel/DeE9LWlOqV-/?dlrf=bDhpeDFlZ3Jxem5i
+            https://www.instagram.com/reel/DeczrQ1PPmJ/?psln=YjkwcThnd2dxZG82
+            https://www.instagram.com/reel/DeX9deetwap/?cplk=MWtyZDNxY3R6ZGRwbA==
+        """.trimIndent()
+        val cleaned = UrlCleaner.cleanInstagramUrlsInText(text)
+        assertTrackingParamsRemoved(cleaned)
+        assertTrue(cleaned.contains("https://www.instagram.com/reel/DeE9LWlOqV-/"))
+        assertTrue(cleaned.contains("https://www.instagram.com/reel/DeczrQ1PPmJ/"))
+        assertTrue(cleaned.contains("https://www.instagram.com/reel/DeX9deetwap/"))
     }
 }

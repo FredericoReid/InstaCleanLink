@@ -2,12 +2,11 @@
 
 InstaCleanLink is an Android app that removes Instagram tracking parameters from links before those links are opened or shared.
 
-The app currently sanitizes these known parameters:
+The app uses a multi-layered strategy to sanitize Instagram tracking parameters:
 
-- `igsh`
-- `igshid`
-- `igsi`
-- `stkn`
+- Known & rotating parameters: `igsh`, `igshid`, `igsi`, `stkn`, `dlrf`, `psln`, `cplk`, `rpxt`, `srtk`, `obrf`, `xtok`, `mdxt`, `exln`, `vrfl`, `ig_rid`, `ig_mid`, `click_source`, `ndid`, `fbclid`, etc.
+- Smart heuristic detection for rotating 4-letter Base64 share tokens.
+- Content-path allowlisting on self-contained media routes (`/p/`, `/reel/`, `/reels/`, `/tv/`, `/stories/`), stripping unknown tracking parameters while preserving functional parameters like `img_index`.
 
 ## What the app does
 
@@ -201,9 +200,8 @@ The goal of InstaCleanLink is to reduce tracking in Instagram links before those
 
 The app currently removes:
 
-- `igsh`
-- `igshid`
-- `igsi`
-- `stkn`
+- `igsh`, `igshid`, `igsi`, `stkn`
+- `dlrf`, `psln`, `cplk`, `rpxt`, `srtk`, `obrf`, `xtok`, `mdxt`, `exln`, `vrfl`
+- dynamically rotated Instagram Base64 share tokens and unknown parameters on post/reel/story URLs
 
 while preserving legitimate non-tracking parameters in the same URL.
