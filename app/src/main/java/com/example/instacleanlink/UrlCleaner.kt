@@ -134,6 +134,9 @@ object UrlCleaner {
         values: List<String>,
         isContentPath: Boolean
     ): Boolean {
+        if (key.isBlank()) {
+            return false
+        }
         val lowerKey = key.lowercase()
 
         // Layer 1: Explicit known trackers always get removed
@@ -153,8 +156,8 @@ object UrlCleaner {
         }
 
         // Layer 3: On self-contained content paths (/p/, /reel/, /reels/, /tv/, /stories/),
-        // any remaining unknown parameter is non-functional tracking noise.
-        if (isContentPath) {
+        // any remaining unknown parameter with a non-blank value is non-functional tracking noise.
+        if (isContentPath && values.any { it.isNotBlank() }) {
             return true
         }
 
